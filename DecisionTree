@@ -1,0 +1,79 @@
+#from https://scikit-learn.org/dev/auto_examples/tree/plot_iris_dtc.html#sphx-glr-auto-examples-tree-plot-iris-dtc-py
+#Add KONE's explanatory note
+print(__doc__)
+import numpy as np
+import matplotlib.pylab as plt
+from sklearn.datasets import load_iris
+from sklearn.tree import DecisionTreeClassifier,plot_tree
+
+#Parameters
+n_classes = 3
+plot_colors ="rgb"
+plot_step = 0.02
+
+#Load data
+iris = load_iris()
+# 处于可视化角度考虑，我们只考虑其中的两个特征。
+# pair中存储的是每两个特征的组合，分别进行分类与可视化。
+for pairidx,pair in enumerate([[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]]):
+
+    # we only take the two corresponding features
+    #取出两列
+    X = iris.data[:,pair]
+    #iris include three classes : Iris Setosa,Iris Versicolour, Iris Virginica
+    Y = iris.target
+
+    #train
+    clf = DecisionTreeClassifier().fit(X,Y)
+
+    #plat the decision boundary
+    # 每个子绘图区域绘制一组（两个特征）的可视化效果
+
+    plt.subplot(2,3,pairidx + 1)
+    plt.title(f"accuracy{clf.score(X,Y):.3f}" )
+    #查找第一列中的最大值和最小值绘制x轴
+    x_min,x_max = X[:,0].min() - 1,X[:,0].max() + 1
+    #查找第二列中的最大值最小值绘制Y轴
+    y_min,y_max = X[:,1].min() - 1,X[:,1].max() + 1
+    print(x_min,x_max,y_min,y_max)
+    #以plot_step为单位，根据X,Y的最大值绘制网格矩阵
+    xx,yy = np.meshgrid(np.arange(x_min,x_max,plot_step),
+                        np.arange(y_min,y_max,plot_step))
+    print(xx.shape,yy.shape)
+    #调整绘制子图的边距
+    plt.tight_layout( h_pad = 0.5,w_pad=0.5,pad=2.5)
+    #np.c_是按行连接两个矩阵，就是把两矩阵左右连接，要求行数相等，个人感觉类似于tf.concat([t1, t2], 1)
+    #np.ravel()是将多维数组拉平拉成一维列向量按照行的顺序
+    #np.c_[xx.ravel(),yy.ravel()]个人理解是创造新的测试数据（方便绘制看似连续的填充图），数据的两个属性1限制在x.min - x.max之间同理 属性2限制在y_min - y_max之间
+    Z = clf.predict(np.c_[xx.ravel(),yy.ravel()])
+    #Z为0,1,2组成的向量,分类结果
+    print(np.c_[xx.ravel(),yy.ravel()],Z)
+    #reshape为二维
+    Z = Z.reshape(xx.shape)
+    #位置参数分别为:X，Y，Z,并将Z的值对应到color map的RYB组中寻找对应颜色
+    cs = plt.contourf(xx,yy,Z,cmap = plt.cm.RdYlBu)
+    #绘制行列轴的特征属性名字（标注）
+    plt.xlabel(iris.feature_names[pair[0]])
+    plt.ylabel(iris.feature_names[pair[1]])
+
+    #plot the training points
+    for i,color in zip(range(n_classes),plot_colors):
+        idx = np.where(Y == i)
+        #绘制散点图 （可选的参数marker='x'会变成X点图，s表示大小一致，linewidth代表当marker是封闭图案时外轮廓大小）
+        plt.scatter(X[idx,0],X[idx,1],c = color,label = iris.target_names[i],cmap=plt.cm.RdYlBu,edgecolors='black',s = 15)
+
+#绘制整个图的标题
+plt.suptitle("Decision surface of a decision tree using paired features")
+##图例及位置：靠右下角
+plt.legend(loc = "lower right",borderpad = 0,handletextpad = 0)
+#修改x、y坐标的范围让所有的数据显示出来
+plt.axis("tight")
+#将前6张图绘制在一张图上
+plt.figure()
+#plt.show()
+clf = DecisionTreeClassifier().fit(iris.data,iris.target)
+#绘制决策树图
+plot_tree(clf,filled = True)
+#两张图一块显示
+plt.show()
+
